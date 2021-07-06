@@ -154,18 +154,18 @@ export default class SearchinGhost {
     /**
      * Set triggers to load the posts data when ready
      */
-    triggerDataLoad() {
+    async triggerDataLoad() {
         switch(this.config.loadOn) {
         case 'focus':
             this.searchBarEls.forEach(searchBarEl => {
-                searchBarEl.addEventListener('focus', () => {
-                    this.loadData();
+                searchBarEl.addEventListener('focus', async () => {
+                    await this.loadData();
                 });
             })
             break;
         case 'page':
-            window.addEventListener('load', () => {
-                this.loadData();
+            window.addEventListener('load', async () => {
+                await this.loadData();
             });
             break;
         case false:
@@ -181,7 +181,7 @@ export default class SearchinGhost {
      * Actually load the data into a searchable index.
      * When this method is completed, we are ready to launch search queries.
      */
-    loadData() {
+    async loadData() {
         if (this.dataLoaded) return;
 
         if (!this.storage) {
@@ -190,14 +190,14 @@ export default class SearchinGhost {
             return;
         }
 
-        let storedIndex = this.storage.getItem("SearchinGhost_index");
+        let storedIndex = await this.storage.getItem("SearchinGhost_index");
         if (storedIndex) {
             this.log("Found an index stored locally, loads it");
             this.config.onIndexBuildStart();
             this.index.import(storedIndex);
             this.dataLoaded = true;
             this.config.onIndexBuildEnd(this.index);
-            this.validateCache();
+            await this.validateCache();
         } else {
             this.log("No already stored index found");
             this.fetch();
@@ -207,8 +207,8 @@ export default class SearchinGhost {
     /**
      * Ensure stored data are up to date.
      */
-    validateCache() {
-        let cacheInfoString = this.storage.getItem("SearchinGhost_cache_info");
+    async validateCache() {
+        let cacheInfoString = await this.storage.getItem("SearchinGhost_cache_info");
         if (!cacheInfoString) {
             this.log("No cache info local object found");
             this.fetch();
@@ -337,8 +337,8 @@ export default class SearchinGhost {
      * Execute a search query.
      * @param {string} inputQuery 
      */
-    search(inputQuery) {
-        this.loadData();
+    async search(inputQuery) {
+        await this.loadData();
 
         this.config.onSearchStart();
 
