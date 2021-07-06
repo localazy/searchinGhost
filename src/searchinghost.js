@@ -1,5 +1,5 @@
 import FlexSearch from 'flexsearch';
-import { getStorage } from '@sifrr/storage';
+import * as localforage from "localforage";
 
 export default class SearchinGhost {
 
@@ -64,7 +64,7 @@ export default class SearchinGhost {
         
         this.dataLoaded = false;  // flag to ensure data are properly loaded
         this.postsCount = 0;      // keep track of posts ID, must be numeric
-        this.storage = getStorage('indexeddb');
+        this.storage = localforage;
 
         this.initConfig(args);
         this.triggerDataLoad();

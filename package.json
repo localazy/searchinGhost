@@ -31,8 +31,8 @@
     "dist/searchinghost.min.js.map"
   ],
   "dependencies": {
-    "@sifrr/storage": "^0.0.9",
-    "flexsearch": "^0.6.32"
+    "flexsearch": "^0.6.32",
+    "localforage": "^1.9.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.3",
