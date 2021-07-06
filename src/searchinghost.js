@@ -234,8 +234,7 @@ export default class SearchinGhost {
 
 
         try {
-            const jsonResponse = (await fetch(lastUpdatedPostUrl)).json();
-            console.log(jsonResponse)
+            const jsonResponse = await (await fetch(lastUpdatedPostUrl)).json();
             const lastestPostUpdatedAt = jsonResponse.posts ? jsonResponse.posts[0].updated_at : 0;
             const totalPosts = jsonResponse.meta.pagination.total;
 
@@ -273,7 +272,7 @@ export default class SearchinGhost {
         const allPostsUrl = this.buildUrl(browseOptions);
 
         try {
-            const jsonResponse = (await fetch(allPostsUrl)).json();
+            const jsonResponse = await (await fetch(allPostsUrl)).json();
             const posts = jsonResponse.posts;
             this.config.onFetchEnd(posts);
             this.config.onIndexBuildStart();
