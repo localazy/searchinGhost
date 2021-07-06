@@ -235,7 +235,8 @@ export default class SearchinGhost {
 
         try {
             const jsonResponse = (await fetch(lastUpdatedPostUrl)).json();
-            const lastestPostUpdatedAt = jsonResponse.posts[0].updated_at;
+            console.log(jsonResponse)
+            const lastestPostUpdatedAt = jsonResponse.posts ? jsonResponse.posts[0].updated_at : 0;
             const totalPosts = jsonResponse.meta.pagination.total;
 
             if (lastestPostUpdatedAt !== cacheInfo.lastestPostUpdatedAt) {
