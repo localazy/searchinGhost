@@ -186,7 +186,7 @@ export default class SearchinGhost {
 
         if (!this.storage) {
             this.log("No local storage available, switch to degraded mode");
-            this.fetch();
+            await this.fetch();
             return;
         }
 
@@ -200,7 +200,7 @@ export default class SearchinGhost {
             await this.validateCache();
         } else {
             this.log("No already stored index found");
-            this.fetch();
+            await this.fetch();
         }
     }
 
@@ -211,7 +211,7 @@ export default class SearchinGhost {
         let cacheInfoString = await this.storage.getItem("SearchinGhost_cache_info");
         if (!cacheInfoString) {
             this.log("No cache info local object found");
-            this.fetch();
+            await this.fetch();
             return;
         }
 
@@ -230,34 +230,34 @@ export default class SearchinGhost {
             order: 'updated_at DESC'
         };
         const lastUpdatedPostUrl = this.buildUrl(browseOptions);
-        fetch(lastUpdatedPostUrl)
-            .then(function(response) {
-                return response.json();
-            })
-            .then((jsonResponse) => {
-                const lastestPostUpdatedAt = jsonResponse.posts[0].updated_at;
-                const totalPosts = jsonResponse.meta.pagination.total;
 
-                if (lastestPostUpdatedAt !== cacheInfo.lastestPostUpdatedAt) {
-                    this.log("Posts update found, purge outdated local cache");
-                    this.fetch();
-                } else if (totalPosts < cacheInfo.totalPosts) {
-                    this.log("Deleted or unpublished posts found, purge outdated local cache")
-                    this.fetch();
-                } else {
-                    this.log("Local cached data up to date");
-                    cacheInfo.lastCacheCheck = new Date().toISOString();
-                    this.storage.setItem("SearchinGhost_cache_info", JSON.stringify(cacheInfo));
-                }
-            }).catch((error) => {
-                console.error("Unable to fetch the latest post information to check cache state", error);
-            });
+
+
+        try {
+            const jsonResponse = (await fetch(lastUpdatedPostUrl)).json();
+            const lastestPostUpdatedAt = jsonResponse.posts[0].updated_at;
+            const totalPosts = jsonResponse.meta.pagination.total;
+
+            if (lastestPostUpdatedAt !== cacheInfo.lastestPostUpdatedAt) {
+                this.log("Posts update found, purge outdated local cache");
+                await this.fetch();
+            } else if (totalPosts < cacheInfo.totalPosts) {
+                this.log("Deleted or unpublished posts found, purge outdated local cache")
+                await this.fetch();
+            } else {
+                this.log("Local cached data up to date");
+                cacheInfo.lastCacheCheck = new Date().toISOString();
+                this.storage.setItem("SearchinGhost_cache_info", JSON.stringify(cacheInfo));
+            }
+        } catch(error) {
+            console.error("Unable to fetch the latest post information to check cache state", error);
+        };
     }
 
     /**
      * Fetch, format and store posts data from Ghost.
      */
-    fetch() {
+    async fetch() {
         this.log("Fetching data from Ghost API");
         this.config.onFetchStart();
 
@@ -270,39 +270,35 @@ export default class SearchinGhost {
         if (this.config.postsFormats.length > 0) browseOptions.formats = this.config.postsFormats;
 
         const allPostsUrl = this.buildUrl(browseOptions);
-        fetch(allPostsUrl)
-            .then(function(response) {
-                return response.json();
-            })
-            .then((jsonResponse) => {
-                const posts = jsonResponse.posts;
-                this.config.onFetchEnd(posts);
-                this.config.onIndexBuildStart();
-                
-                this.index = this.getNewSearchIndex();
-                posts.forEach((post) => {
-                    let formattedPost = this.format(post);
-                    if (formattedPost) this.index.add(formattedPost);
-                });
 
-                this.dataLoaded = true;
-                this.config.onIndexBuildEnd(this.index);
-
-                if (this.storage) {
-                    const cacheInfo = {
-                        lastCacheCheck: new Date().toISOString(),
-                        lastestPostUpdatedAt: posts[0].updated_at,
-                        totalPosts: jsonResponse.meta.pagination.total
-                    }
-                    this.storage.setItem("SearchinGhost_index", this.index.export());
-                    this.storage.setItem("SearchinGhost_cache_info", JSON.stringify(cacheInfo));
-                }
-
-                this.log("Search index build complete");
-            })
-            .catch((error) => {
-                this.error("Unable to fetch Ghost data.\n", error);
+        try {
+            const jsonResponse = (await fetch(allPostsUrl)).json();
+            const posts = jsonResponse.posts;
+            this.config.onFetchEnd(posts);
+            this.config.onIndexBuildStart();
+            
+            this.index = this.getNewSearchIndex();
+            posts.forEach((post) => {
+                let formattedPost = this.format(post);
+                if (formattedPost) this.index.add(formattedPost);
             });
+
+            this.dataLoaded = true;
+            this.config.onIndexBuildEnd(this.index);
+
+            if (this.storage) {
+                const cacheInfo = {
+                    lastCacheCheck: new Date().toISOString(),
+                    lastestPostUpdatedAt: posts[0].updated_at,
+                    totalPosts: jsonResponse.meta.pagination.total
+                }
+                this.storage.setItem("SearchinGhost_index", this.index.export());
+                this.storage.setItem("SearchinGhost_cache_info", JSON.stringify(cacheInfo));
+            }
+            this.log("Search index build complete");
+        } catch(error) {
+            this.error("Unable to fetch Ghost data.\n", error);
+        };
     }
 
     /**
